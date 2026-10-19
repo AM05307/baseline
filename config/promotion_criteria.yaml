@@ -1,0 +1,53 @@
+# 승격 기준 — 사전 등록 (executor/criteria.py가 읽는다).
+#
+# 단계 결과를 보기 전에 기준을 먼저 적어두는 파일이다. 결과를 본 뒤 기준을 바꾸면 그 변경이
+# executor.db config_history에 남는다(append-only) — 기준을 결과에 맞춰 고쳤는지 나중에 확인할 수 있다.
+#
+# confirmed: false 인 stage로는 승격할 수 없다(리포트는 각 항목 PASS/FAIL을 보여주지만 "승격 가능"이 안 뜬다).
+# 아래 값은 전부 예시다. 사용자가 확정한 뒤 confirmed: true로 바꾼다.
+# 항목 값에 "미확정"을 쓰면 그 항목은 FAIL(미확정)로 처리된다.
+#
+# 항목:
+#   min_days                    단계 진입 후 스냅샷이 있는 거래일 수 ≥
+#   min_trades                  단계 진입 후 체결된 주문 수 ≥
+#   max_mdd_ratio_vs_buy_hold   |단계 MDD| ≤ 이 배수 × |같은 기간 단순 보유 MDD|
+#   max_divergence_pct          비교 기준(백테스트·섀도) 대비 누적수익률 괴리(%p) ≤
+#   max_order_errors            주문 오류·거절 건수 ≤
+#   max_reconciliation_mismatches  잔고 불일치 건수 ≤
+
+stages:
+  shadow_to_paper:
+    confirmed: false
+    min_days: 40
+    min_trades: 5
+    max_mdd_ratio_vs_buy_hold: 1.0
+    max_divergence_pct: 2.0
+    max_order_errors: 0
+    max_reconciliation_mismatches: 0
+
+  paper_to_live_1:
+    confirmed: false
+    min_days: 60
+    min_trades: 10
+    max_mdd_ratio_vs_buy_hold: 1.0
+    max_divergence_pct: 3.0
+    max_order_errors: 0
+    max_reconciliation_mismatches: 0
+
+  live_1_to_live_2:
+    confirmed: false
+    min_days: 120
+    min_trades: 20
+    max_mdd_ratio_vs_buy_hold: 1.0
+    max_divergence_pct: 3.0
+    max_order_errors: 0
+    max_reconciliation_mismatches: 0
+
+  live_2_to_live_3:
+    confirmed: false
+    min_days: 미확정
+    min_trades: 미확정
+    max_mdd_ratio_vs_buy_hold: 미확정
+    max_divergence_pct: 미확정
+    max_order_errors: 0
+    max_reconciliation_mismatches: 0

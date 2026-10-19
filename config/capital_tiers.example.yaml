@@ -1,0 +1,78 @@
+# 자본 사다리 — 검증 단계별 운용 한도 (executor/tiers.py가 읽는다).
+#
+# ※ 이 파일은 저장소에 두는 **예시값**이다. 실제 금액은 config/capital_tiers.local.yaml(gitignore)에 두면
+#   executor/config_files.resolve_config()가 그쪽을 먼저 읽는다. local 파일이 없으면 이 예시값으로 돈다
+#   (executor 화면에 "예시 설정" 표시).
+#
+# 규칙(EXECUTOR.md "자본 사다리" 참고):
+#   - executor가 주문 계산에 쓰는 자본 = min(운용분 평가금액, 현재 단계 한도). 한도 밖 금액은 현금으로 둔다.
+#   - 승격은 수동(executor/scripts/promote_tier.py + 확인 문구), 강등은 자동(한 단계씩).
+#   - confirmed: false 인 단계로는 승격할 수 없다. 금액·조건을 사용자가 확정한 뒤 true로 바꾼다.
+#   - 이 파일이 바뀌면 executor.db의 config_history에 내용 전체가 append-only로 남는다.
+#
+# kind: virtual = 가상 자금(shadow·모의투자), real = 실제 자금.
+#   virtual 단계의 max_capital_krw는 실제 돈이 아니라 "가상으로 굴리는 금액"이다.
+# max_capital_krw: 정수(원) 또는 "미확정".
+# promotion_criteria: 다음 단계로 올라갈 때 쓰는 config/promotion_criteria.yaml의 stage 키.
+# demotion: 이 단계에 있는 동안 하나라도 넘으면 자동으로 한 단계 내린다.
+#   강등 기준은 confirmed: false여도 적힌 값으로 작동한다 — 강등은 피해를 줄이는 방향이라,
+#   미확정이라는 이유로 꺼두는 것보다 예시값으로라도 켜두는 쪽이 안전하다.
+#
+# ※ 2026-10-18 기준 executor에는 실제 자금으로 주문하는 브로커 코드가 없다(모의투자까지만 구현 범위).
+#   live_* 단계는 한도·이력 체계로만 존재한다.
+
+tiers:
+  - name: shadow
+    kind: virtual
+    max_capital_krw: 1000000        # 예시 — live_1과 같은 규모로 두면 비교가 쉽다
+    confirmed: true
+    promotion_criteria: shadow_to_paper
+    demotion: null                  # 맨 아래 단계 — 더 내려갈 곳 없음
+
+  - name: paper
+    kind: virtual
+    max_capital_krw: 1000000        # 예시(모의투자 계좌 잔고와 무관하게 이 금액만 운용)
+    confirmed: true
+    promotion_criteria: paper_to_live_1
+    demotion:
+      confirmed: false              # 예시값 — 확정 전에도 이 값으로 작동
+      max_mdd_pct: 15.0             # 단계 진입 후 운용분 MDD(%)가 이 값 초과
+      max_divergence_pct: 5.0       # 비교 기준 대비 누적수익률 괴리(%p)가 이 값 초과
+      max_order_errors: 0           # 주문 오류·거절 건수가 이 값 초과
+      max_reconciliation_mismatches: 0  # 잔고 불일치 건수가 이 값 초과
+
+  - name: live_1
+    kind: real
+    max_capital_krw: 1000000        # 예시 — 실제 금액은 local 파일에
+    confirmed: true
+    promotion_criteria: live_1_to_live_2
+    demotion:
+      confirmed: false
+      max_mdd_pct: 15.0
+      max_divergence_pct: 5.0
+      max_order_errors: 0
+      max_reconciliation_mismatches: 0
+
+  - name: live_2
+    kind: real
+    max_capital_krw: 미확정          # 사용자가 정할 값
+    confirmed: false
+    promotion_criteria: live_2_to_live_3
+    demotion:
+      confirmed: false
+      max_mdd_pct: 15.0
+      max_divergence_pct: 5.0
+      max_order_errors: 0
+      max_reconciliation_mismatches: 0
+
+  - name: live_3
+    kind: real
+    max_capital_krw: 미확정
+    confirmed: false
+    promotion_criteria: null        # 마지막 단계(더 추가하려면 아래에 이어서)
+    demotion:
+      confirmed: false
+      max_mdd_pct: 15.0
+      max_divergence_pct: 5.0
+      max_order_errors: 0
+      max_reconciliation_mismatches: 0

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자금 배분 현황</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; background:#fff; color:#1d1d1f; margin:0; padding:24px; }
+  .card { border:1px solid #e5e5ea; border-radius:12px; padding:16px 20px; margin-bottom:16px; max-width:1100px; }
+  h1 { font-size:20px; } h2 { font-size:15px; margin:0 0 10px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; }
+  .l { font-size:11px; color:#86868b; } .v { font-size:18px; font-weight:600; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { padding:6px 8px; border-bottom:1px solid #f0f0f2; text-align:left; } td.num, th.num { text-align:right; }
+  .tag { display:inline-block; padding:1px 6px; border-radius:4px; font-size:11px; }
+  .pass { background:#e8f7ec; color:#1a7f37; } .fail { background:#fdecec; color:#c62828; } .warn { background:#fff4e0; color:#a15c00; }
+  .note { font-size:12px; color:#6e6e73; }
+</style>
+</head>
+<body>
+<h1>자금 배분 현황</h1>
+{% if example_config %}<div class="card"><span class="tag warn">예시 설정</span> 운용 한도를 저장소의 예시값({{ example_config }})으로 계산하고 있습니다. 실제 값은 config/capital_tiers.local.yaml에 두세요(gitignore).</div>{% endif %}
+{% if calendar_warning %}<div class="card"><span class="tag warn">휴장일 캘린더</span> {{ calendar_warning }}</div>{% endif %}
+<p class="note">executor 읽기 전용 화면 · 주문·이체 기능 없음 · 승격은 수동(python -m executor.scripts.promote_tier), 강등은 자동</p>
+
+{% if not started %}
+<div class="card"><h2>현재 단계</h2><div class="note">단계 기록 없음(executor를 아직 시작하지 않음) — 데이터 없음</div></div>
+{% else %}
+<div class="card">
+  <h2>현재 단계 {% if current.freeze == 'halt' %}<span class="tag fail">모든 주문 정지(잔고 불일치)</span>{% elif current.freeze == 'review_required' %}<span class="tag warn">신규 주문 정지 · 보유 유지 · 수동 판단 필요</span>{% endif %}</h2>
+  <div class="grid">
+    <div><div class="l">단계</div><div class="v">{{ current.tier }}</div><div class="note">{{ current.kind }} · 진입 {{ current.entered }}</div></div>
+    <div><div class="l">운용 한도</div><div class="v">{{ current.cap }}</div></div>
+    <div><div class="l">자동매매 계좌 평가금액</div><div class="v">{{ current.account_value }}</div><div class="note">기준일 {{ current.as_of }}</div></div>
+    <div><div class="l">운용 자본 (주문 계산에 사용)</div><div class="v">{{ current.operating_capital }}</div><div class="note">운용분 평가 {{ current.sleeve_value }}</div></div>
+    <div><div class="l">한도 밖 현금</div><div class="v">{{ current.outside_cash }}</div></div>
+  </div>
+</div>
+{% endif %}
+
+{% if savings %}
+<div class="card">
+  <h2>적립 계좌 (수동 기록)</h2>
+  <div class="grid">
+    <div><div class="l">적립 계좌 누적 납입액</div><div class="v">{{ savings.contributed }}</div><div class="note">{{ savings.n }}건</div></div>
+    <div><div class="l">적립 계좌 평가금액</div><div class="v">{{ savings.valuation }}</div><div class="note">기준일 {{ savings.valuation_as_of }}</div></div>
+    <div><div class="l">자동매매 계좌 누적 납입액</div><div class="v">{{ savings.trading_contributed }}</div><div class="note">{{ savings.n_trading }}건 · 납입은 한도를 늘리지 않음</div></div>
+  </div>
+</div>
+{% endif %}
+
+{% if stints %}
+<div class="card">
+  <h2>단계별 성과</h2>
+  <table>
+    <thead><tr><th>단계</th><th>진입</th><th>종료</th><th class="num">운용 일수</th><th class="num">거래 수</th>
+      <th class="num">누적 수익률</th><th class="num">MDD</th><th>같은 기간 단순 보유 (수익률 / MDD)</th></tr></thead>
+    <tbody>
+    {% for s in stints %}
+      <tr><td>{{ s.tier }}{% if s.event == 'demote' %} <span class="tag warn">강등</span>{% endif %}</td><td>{{ s.entered }}</td><td>{{ s.left }}</td>
+        <td class="num">{{ s.days }}</td><td class="num">{{ s.trades }}</td><td class="num">{{ s.cum }}</td><td class="num">{{ s.mdd }}</td>
+        <td>{% for bm in s.benchmarks %}{{ bm.name }} {{ bm.cum }} / {{ bm.mdd }}{% if not loop.last %} · {% endif %}{% else %}데이터 없음{% endfor %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="note">단순 보유 비교 종목은 config/executor.yaml(benchmarks). 운용 일수·거래 수가 적으면 수익률·MDD는 참고하지 말 것.</p>
+</div>
+{% endif %}
+
+{% if criteria %}
+<div class="card">
+  <h2>다음 승격 조건 — {{ criteria.next_tier }} (기준 '{{ criteria.stage }}' {% if criteria.confirmed %}확정{% else %}<span class="tag warn">미확정</span>{% endif %})</h2>
+  <p class="note">표본: 운용 {{ criteria.days }}일 · 거래 {{ criteria.trades }}건</p>
+  <table>
+    <thead><tr><th>항목</th><th class="num">실제</th><th class="num">기준</th><th>판정</th></tr></thead>
+    <tbody>
+    {% for i in criteria['items'] %}
+      <tr><td>{{ i.label }}</td><td class="num">{{ i.actual }}</td><td class="num">{{ i.threshold }}</td>
+        <td><span class="tag {{ 'pass' if i.passed else 'fail' }}">{{ '충족' if i.passed else '미충족' }}</span> <span class="note">{{ i.note }}</span></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if criteria.eligible %}
+  <p><span class="tag pass">승격 가능</span> 반영은 수동: python -m executor.scripts.promote_tier</p>
+  {% else %}
+  <p class="note">승격 불가: {{ criteria.blockers | join(' / ') }}</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if started %}
+<div class="card">
+  <h2>최근 강등 이력</h2>
+  {% if demotions %}
+  <table><thead><tr><th>날짜</th><th>단계</th><th>사유</th></tr></thead><tbody>
+  {% for d in demotions %}<tr><td>{{ d.at }}</td><td>{{ d['from'] }} → {{ d.to }}</td><td>{{ d.reason }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<div class="note">강등 이력 없음</div>{% endif %}
+</div>
+{% endif %}
+</body>
+</html>

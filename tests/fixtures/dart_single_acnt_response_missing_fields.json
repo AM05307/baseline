@@ -1,0 +1,21 @@
+{
+  "_fixture_note": "방어적 파싱 테스트용 가짜 응답 — rcept_dt가 없는 행(rcept_no로 추정해야 함), account_nm이 없는 행(버려야 함), thstrm_amount가 숫자가 아닌 행(None으로 처리)을 흉내낸다.",
+  "status": "000",
+  "message": "정상",
+  "list": [
+    {
+      "rcept_no": "20260515000123",
+      "account_nm": "자본총계",
+      "thstrm_amount": "65,000,000,000,000"
+    },
+    {
+      "rcept_no": "20260515000123",
+      "thstrm_amount": "1000"
+    },
+    {
+      "rcept_no": "20260515000123",
+      "account_nm": "영업이익",
+      "thstrm_amount": "확인불가"
+    }
+  ]
+}

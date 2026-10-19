@@ -1,0 +1,33 @@
+{
+  "_fixture_note": "실제 DART 응답이 아니다 — 손으로 만든 가짜 공시검색(list.json) 응답(collectors/dart_client.py 상단 TODO 참고).",
+  "status": "000",
+  "message": "정상",
+  "page_no": 1,
+  "page_count": 100,
+  "total_count": 2,
+  "total_page": 1,
+  "list": [
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "분기보고서 (2026.03)",
+      "rcept_no": "20260515000123",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "2026-05-15",
+      "rm": "코"
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(유상증자결정)",
+      "rcept_no": "20260601000456",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "2026-06-01",
+      "rm": ""
+    }
+  ]
+}

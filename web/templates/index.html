@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>baseline — SK하이닉스 관측 대시보드</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { background:#fbfbfd; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    color:#1d1d1f;
+  }
+  .num, td.num, .chg { font-variant-numeric: tabular-nums; }
+  a { color:inherit; }
+
+  nav { display:flex; align-items:center; justify-content:space-between; padding:0 40px; height:56px;
+        border-bottom:1px solid #d2d2d7; background:rgba(251,251,253,.9); position:sticky; top:0; z-index:10; }
+  nav .brand { font-size:15px; font-weight:700; letter-spacing:-.01em; }
+  nav .status { font-size:12px; color:#86868b; display:flex; gap:16px; align-items:center; }
+  nav .dot { width:6px; height:6px; border-radius:50%; background:#86868b; display:inline-block; margin-right:5px; }
+
+  .wrap { max-width:1320px; margin:0 auto; padding:0 40px; }
+
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid #d2d2d7; }
+  .kpi { padding:22px 28px; border-right:1px solid #e5e5e7; }
+  .kpi:last-child { border-right:none; }
+  .kpi .l { font-size:11.5px; color:#86868b; text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+  .kpi .v { font-size:26px; font-weight:500; letter-spacing:-.01em; margin-top:8px; }
+  .kpi .s { font-size:12px; color:#86868b; margin-top:5px; }
+
+  .grid { display:grid; grid-template-columns: 2fr 1fr; gap:0; }
+  .main-col { border-right:1px solid #d2d2d7; padding:28px 32px 0 0; }
+  .side-col { padding:28px 0 0 32px; }
+
+  .card { padding-bottom:28px; margin-bottom:28px; border-bottom:1px solid #e5e5e7; }
+  .card:last-child { border-bottom:none; }
+  .card-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
+  .card-head h2 { font-size:14px; font-weight:600; }
+  .card-head .sub { font-size:11px; color:#86868b; }
+  .card-head .legend { display:flex; gap:14px; font-size:11.5px; color:#86868b; }
+  .lg { width:12px; height:2px; display:inline-block; }
+
+  .peers-row { display:grid; grid-template-columns:repeat(5,1fr); gap:0; margin-top:22px; }
+  .peer { padding-right:16px; border-right:1px solid #f0f0f2; }
+  .peer:last-child { border-right:none; padding-right:0; }
+  .peer .n { font-size:12.5px; font-weight:600; }
+  .peer .s { font-size:10.5px; color:#86868b; margin-bottom:4px; }
+  .peer .c { font-size:12px; font-weight:600; margin-top:2px; }
+
+  .up { color:#248a3d; }
+  .down { color:#d70015; }
+
+  .hero-stat .l { font-size:12px; color:#86868b; }
+  .hero-stat .v { font-size:40px; font-weight:300; letter-spacing:-.02em; margin-top:6px; }
+  .hero-stat .note { font-size:12px; color:#86868b; margin-top:10px; line-height:1.55; }
+
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th { text-align:left; font-weight:500; color:#86868b; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; padding:0 0 8px; border-bottom:1px solid #d2d2d7; }
+  td { padding:9px 0; border-bottom:1px solid #f0f0f2; }
+  td.num { text-align:right; }
+  tr:last-child td { border-bottom:none; }
+  .tag { font-size:10px; color:#86868b; border:1px solid #d2d2d7; border-radius:20px; padding:1px 7px; white-space:nowrap; }
+  .tag.warn { color:#b9770e; border-color:#f2d59b; }
+  .tag.rumor { color:#d70015; border-color:#f3b8b8; font-weight:600; }
+
+  .event { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f2; font-size:12.5px; }
+  .event:last-child { border-bottom:none; }
+  .event .d { color:#86868b; font-size:11px; min-width:66px; }
+
+  .gauge-card { text-align:center; }
+  .gauge-card .card-head { text-align:left; }
+  .gauge-card .cat { font-size:16px; font-weight:700; margin-top:-6px; }
+  .gauge-card .desc { font-size:11.5px; color:#86868b; margin-top:4px; }
+  .gauge-card .src { font-size:10px; color:#c7c7cc; margin-top:10px; }
+
+  .news-item { padding:14px 0; border-bottom:1px solid #f0f0f2; }
+  .news-item:last-child { border-bottom:none; }
+  .news-head { display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap; }
+  .news-title { font-size:13.5px; font-weight:600; }
+  .news-title a { text-decoration:none; }
+  .news-title a:hover { text-decoration:underline; }
+  .news-meta { font-size:11px; color:#86868b; white-space:nowrap; }
+
+  .lens { padding:16px 0; border-bottom:1px solid #e5e5e7; }
+  .lens:last-child { border-bottom:none; }
+  .lens .lh { font-size:13px; font-weight:700; margin-bottom:8px; }
+  .lens .lh .stub { font-size:11px; color:#86868b; font-weight:500; }
+  .finding { display:flex; gap:10px; padding:5px 0; font-size:12.5px; align-items:baseline; }
+  .finding .st { min-width:50px; font-size:11px; font-weight:700; }
+  .finding .st.met { color:#248a3d; }
+  .finding .st.unmet { color:#86868b; }
+  .finding .st.unknown { color:#b9770e; }
+  .finding .detail { color:#6e6e73; }
+  .finding .crit { color:#1d1d1f; }
+
+  .empty { color:#86868b; font-size:13px; }
+
+  .price-rule { padding:16px 0; border-bottom:1px solid #e5e5e7; }
+  .price-rule:last-child { border-bottom:none; }
+  .price-rule .ph { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .price-rule .ph h3 { font-size:13px; font-weight:700; }
+  .price-levels { display:grid; grid-template-columns:repeat(3,1fr); gap:0; margin-bottom:10px; }
+  .price-levels .pl { padding-right:14px; }
+  .price-levels .pl .l { font-size:10.5px; color:#86868b; text-transform:uppercase; letter-spacing:.04em; }
+  .price-levels .pl .v { font-size:19px; font-weight:600; margin-top:3px; }
+  .price-levels .pl.entry .v { color:#1d1d1f; }
+  .price-levels .pl.target .v { color:#248a3d; }
+  .price-levels .pl.stop .v { color:#d70015; }
+  .price-rule .stats { font-size:11.5px; color:#6e6e73; }
+
+  footer { padding:20px 0 40px; font-size:11px; color:#86868b; line-height:1.6; border-top:1px solid #d2d2d7; margin-top:8px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">baseline</div>
+  <div class="status">
+    <span><span class="dot"></span>{{ "KIS 연동됨" if kis_ready else "KIS 미연동" }}</span>
+    <span>{{ today }}</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+{% if not has_data %}
+  <div class="card" style="padding-top:28px">
+    <h2 style="margin-bottom:10px">데이터 없음</h2>
+    <p class="empty">아직 000660 시세가 없습니다. 먼저 실행하세요:</p>
+    <p style="margin-top:8px"><code>python collectors/kr_market.py 1y</code></p>
+    <p style="margin-top:4px"><code>python collectors/us_market.py 1y</code></p>
+  </div>
+{% else %}
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="l">000660 · KRX</div>
+      <div class="v">₩{{ "{:,.0f}".format(kpi.hynix_close) }}</div>
+      <div class="s">
+        {% if kpi.hynix_chg is not none %}
+          <span class="chg {{ 'up' if kpi.hynix_chg >= 0 else 'down' }}">{{ "%+.2f"|format(kpi.hynix_chg) }}%</span> 전일 대비
+        {% else %}<span class="empty">전일 데이터 부족</span>{% endif %}
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="l">SKHY · Nasdaq ADR</div>
+      {% if kpi.skhy_close is not none %}
+        <div class="v">${{ "%.2f"|format(kpi.skhy_close) }}</div>
+        <div class="s">{% if kpi.skhy_chg is not none %}<span class="chg {{ 'up' if kpi.skhy_chg >= 0 else 'down' }}">{{ "%+.2f"|format(kpi.skhy_chg) }}%</span> 전일 대비{% endif %}</div>
+      {% else %}<div class="v empty" style="font-size:14px">데이터 없음</div>{% endif %}
+    </div>
+    <div class="kpi">
+      <div class="l">ADR 프리미엄</div>
+      {% if kpi.adr_premium_pct is not none %}
+        <div class="v">{{ "%+.1f"|format(kpi.adr_premium_pct) }}%</div>
+        <div class="s">환산 기준 · 관측값</div>
+      {% else %}<div class="v empty" style="font-size:14px">데이터 없음</div>{% endif %}
+    </div>
+    <div class="kpi">
+      <div class="l">시장 심리 (VIX 기반)</div>
+      {% if sentiment %}
+        <div class="v">{{ "%.0f"|format(sentiment.score) }}</div>
+        <div class="s">{{ sentiment.category }}{% if not sentiment.reliable %} · <span class="tag warn">표본 부족</span>{% endif %}</div>
+      {% else %}<div class="v empty" style="font-size:14px">데이터 없음</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="main-col">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>전문가 경험칙 신호 · 위험 점수</h2>
+          <span class="sub">신호 그룹 균등 가중치 · 단계 = 과거 분포 백분위 · 매매 실행 없음</span>
+        </div>
+        {% if group_state %}
+        {% if group_state.error %}
+        <div class="stats" style="margin-bottom:10px"><span class="tag warn">데이터 없음</span> 그룹 방식 상태를 계산할 수 없습니다: {{ group_state.error }}</div>
+        {% else %}
+        <div class="price-levels" style="grid-template-columns:repeat(3,1fr)">
+          <div class="pl"><div class="l">위험 점수 (켜진 위험 그룹 비율, 0~100)</div>
+            <div class="v {{ 'down' if group_state.stage > 0 else 'up' }}">{{ "%.0f"|format(group_state.risk_score) }}</div>
+          </div>
+          <div class="pl"><div class="l">기회 지표 (켜진 기회 그룹 비율, 상태에 안 씀)</div>
+            <div class="v">{% if group_state.opportunity_score == group_state.opportunity_score %}{{ "%.0f"|format(group_state.opportunity_score) }}{% else %}데이터 없음{% endif %}</div>
+          </div>
+          <div class="pl"><div class="l">오늘의 상태 ({{ group_state.decision_date }} 종가 기준)</div>
+            <div class="v" style="font-size:16px">
+              {{ group_state.new_buy_status }}
+              {% if group_state.sell_stage %}<span class="tag warn">보유 중이라면: {{ group_state.sell_stage }}</span>{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="stats" style="margin-bottom:6px">
+          단계 기준점(1/2/3단계 이상) =
+          {% for v in group_state.thresholds %}{% if v is none %}도달 불가{% else %}{{ "%.1f"|format(v) }}{% endif %}{% if not loop.last %} / {% endif %}{% endfor %}
+          — 기준 기간 {{ group_state.calibration }} 위험 점수 분포 상위
+          {% for q in group_state.quantiles %}{{ "%.0f"|format(q * 100) }}%{% if not loop.last %}/{% endif %}{% endfor %}
+          (동점 때문에 실제 비율 {% for a in group_state.actual_shares %}{{ "%.1f"|format(a * 100) }}%{% if not loop.last %}/{% endif %}{% endfor %}, n={{ group_state.n_days }}일).
+          기준점은 고정값이며 검증 기간(2019~) 결과를 보고 바꾸지 않습니다. 값 있는 위험 그룹 {{ group_state.groups_with_data }}개만 평균.
+        </div>
+        <table style="margin-bottom:12px">
+          <tr><th>위험 그룹</th><th>그룹 점수</th><th>켜진 신호</th><th>값 있는 신호</th></tr>
+          {% for g in group_state.groups %}
+          <tr><td>{{ g.name }}</td>
+            <td>{% if g.score_pct is none %}데이터 없음{% else %}{{ "%.0f"|format(g.score_pct) }}{% endif %}</td>
+            <td>{{ g.on | join(', ') if g.on else '-' }}</td><td>{{ g.n_with_value }}/{{ g.n_total }}</td></tr>
+          {% endfor %}
+        </table>
+        {% endif %}
+        {% endif %}
+        {% if risk_state %}
+        <div style="font-size:12px; color:#86868b; margin:6px 0">적중률 가중치 방식(옵션 · 참고 — 상태 판정에 쓰지 않음)</div>
+        <div class="price-levels" style="grid-template-columns:repeat(3,1fr)">
+          <div class="pl"><div class="l">위험 점수 (50 = 켜진 위험 신호 없음)</div>
+            <div class="v {{ 'down' if risk_state.risk_score >= 60 else 'up' }}">{{ "%.0f"|format(risk_state.risk_score) }}</div>
+          </div>
+          <div class="pl"><div class="l">기회 지표 (50 = 켜진 기회 신호 없음)</div>
+            <div class="v">{{ "%.0f"|format(risk_state.opportunity_score) }}</div>
+          </div>
+          <div class="pl"><div class="l">이 방식이었다면의 상태(참고)</div>
+            <div class="v" style="font-size:16px">
+              {{ risk_state.new_buy_status }}
+              {% if risk_state.sell_stage_if_holding %}<span class="tag warn">보유 중이라면: {{ risk_state.sell_stage_if_holding }}</span>{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="stats" style="margin-bottom:10px">
+          위험 점수 = (켜진 risk 가중치 합 {{ "%.1f"|format(risk_state.risk_weight_sum) }}% + 100) / 2 ·
+          기회 지표 = (켜진 opportunity 가중치 합 {{ "%.1f"|format(risk_state.opportunity_weight_sum) }}% + 100) / 2 ·
+          이 방식의 상태는 위험 점수 60/80점으로 정합니다(기회 지표는 상태를 바꾸지 않음)
+          {% if risk_state.combo_triggered %} · <span class="tag warn">KHJ_COMBO 트리거</span>{% endif %}
+        </div>
+        {% if score_ceiling %}
+        <div class="stats" style="margin-bottom:6px">
+          <span class="tag warn">점수 상한</span>
+          현재 최대 가능 점수 {{ "%.0f"|format(score_ceiling.max_score) }}점 — {{ score_ceiling.stages }} 판정 불가(누락: {{ score_ceiling.missing | join(', ') }})
+          {% if score_ceiling.structural %} · {{ score_ceiling.structural | join(', ') }}는 누락이 없어도 현재 가중치로 도달 불가{% endif %}
+        </div>
+        {% endif %}
+        {% if risk_state.concentration_warnings %}
+        {% for w in risk_state.concentration_warnings %}
+        <div class="stats" style="margin-bottom:6px">
+          <span class="tag warn">쏠림 경고</span> {{ w.group }}에서 파생된 신호
+          {{ w.signals | join(', ') }}가 켜진 신호 가중치 합의
+          {{ "%.0f"|format(w.share_of_total_pct) }}%({{ "%.1f"|format(w.weight_pct) }}%p)를 차지합니다 —
+          서로 다른 신호처럼 보이지만 같은 원천 지표(예: 미국 10년물)를 두 번 반영한 것일 수 있습니다.
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% if risk_state.contributions %}
+        {% for group, label in [('risk', '위험 점수'), ('opportunity', '기회 지표')] %}
+        {% set items = risk_state.contributions | selectattr('score', 'equalto', group) | list %}
+        {% if items %}
+        <div style="font-size:11px; color:#86868b; margin-bottom:4px">{{ label }} 분해(신호별 기여도, 50점 기준) — 막대 길이는 기여도</div>
+        <div style="margin-bottom:12px">
+          {% for c in items %}
+          <div style="display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:3px">
+            <div style="width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ c.name }}</div>
+            <div style="flex:1; background:#f0f0f2; border-radius:3px; height:10px; position:relative">
+              <div style="height:10px; border-radius:3px; width:{{ (c.score_contribution | abs / 50 * 100) | round(1) }}%; background:{{ '#ff3b30' if group == 'risk' else '#34c759' }}"></div>
+            </div>
+            <div style="width:48px; text-align:right">{{ "%+.1f"|format(c.score_contribution) }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% if manual_input_freshness %}
+        {% set stale_items = manual_input_freshness.values() | selectattr('stale') | list %}
+        {% if stale_items %}
+        <div class="stats" style="margin-bottom:10px">
+          <span class="tag warn">수동 입력 오래됨</span>
+          {% for k, f in manual_input_freshness.items() if f.stale %}
+          {{ k }}({{ f.age_days }}일 전, {{ f.effective_on }})
+          {% endfor %}
+          — 점수에는 그대로 포함되어 있습니다(관찰만, 자동 제외 안 함).
+        </div>
+        {% endif %}
+        {% endif %}
+        {% if risk_state.on_signals %}
+        <div style="font-size:11px; color:#86868b; margin-bottom:6px">
+          기준률은 "같은 기간 아무 날이나 찍었을 때"의 비율(0.5 아님). CI는 이벤트 단위
+          부트스트랩 95% 신뢰구간. q값은 다중비교(Benjamini-Hochberg) 보정값.
+          "유의"는 CI 하한이 기준률을 넘고 이벤트 수가 충분할 때만(가중치를 받는 조건과 동일).
+        </div>
+        <table>
+          <thead><tr><th>신호</th><th>전문가</th><th>출처</th><th class="num">이벤트(n)</th><th class="num">적중률</th>
+            <th class="num">기준률</th><th class="num">95%CI</th><th class="num">q값</th>
+            <th class="num">최근1년 적중률</th><th class="num">가중치</th></tr></thead>
+          <tbody>
+            {% for s in risk_state.on_signals %}
+            <tr>
+              <td>{{ s.name }} <span class="tag {{ 'down' if s.direction == 'risk' else 'up' }}">{{ s.direction }}</span>
+                {% if s.significant %}<span class="tag up">유의</span>{% endif %}
+                {% if s.approximate %}<span class="tag warn" title="정밀 지표가 아니라 근사치로 대체됨">근사 지표</span>{% endif %}</td>
+              <td>{{ s.expert_id }}</td>
+              <td>{{ s.source_ref or '-' }}</td>
+              <td class="num">{{ s.n_events }}{% if not s.reliable %}<span class="tag warn">n&lt;30</span>{% endif %}</td>
+              <td class="num">{{ "%.1f"|format(s.hit_rate_pct) if s.hit_rate_pct == s.hit_rate_pct else '-' }}%</td>
+              <td class="num">{{ "%.1f"|format(s.base_rate_pct) if s.base_rate_pct == s.base_rate_pct else '-' }}%</td>
+              <td class="num">{{ "%.0f"|format(s.ci_lower_pct) if s.ci_lower_pct == s.ci_lower_pct else '-' }}~{{ "%.0f"|format(s.ci_upper_pct) if s.ci_upper_pct == s.ci_upper_pct else '-' }}%</td>
+              <td class="num">{{ "%.2f"|format(s.q_value) if s.q_value == s.q_value else '-' }}</td>
+              <td class="num">{{ "%.1f"|format(s.oos_hit_rate_pct) if s.oos_hit_rate_pct == s.oos_hit_rate_pct else '-' }}% ({{ s.oos_n_events }}건)</td>
+              <td class="num">{{ "%.1f"|format(s.weight_pct) }}%</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty">오늘 켜진 신호 없음</div>
+        {% endif %}
+        {% if expert_rows %}
+        <div style="margin-top:16px; font-size:11px; color:#86868b">전문가별 가중치</div>
+        <table>
+          <thead><tr><th>전문가</th><th class="num">신호 수</th><th class="num">평균 적중률</th><th class="num">총 표본</th><th class="num">가중치</th></tr></thead>
+          <tbody>
+            {% for e in expert_rows %}
+            <tr>
+              <td>{{ e.name }}{% if e.title %} <span class="news-meta">({{ e.title }})</span>{% endif %}</td>
+              <td class="num">{{ e.n_signals }}</td>
+              <td class="num">{% if e.avg_hit_rate_pct is not none %}{{ "%.1f"|format(e.avg_hit_rate_pct) }}%{% else %}<span class="empty">데이터 없음</span>{% endif %}</td>
+              <td class="num">{{ e.total_n }}</td>
+              <td class="num">{{ "%.1f"|format(e.weight_pct) }}%</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+        {% else %}
+        <div class="empty">000660 시세가 1년 미만입니다. <code>python collectors/kr_market.py 5y</code> 실행 필요.</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>000660 vs ADR(SKHY) · 최근 90거래일 (정규화)</h2>
+          <div class="legend">
+            <span><span class="lg" style="background:#1d1d1f"></span>000660 (KRX)</span>
+            <span><span class="lg" style="background:#0071e3"></span>SKHY (정규화)</span>
+          </div>
+        </div>
+        {{ main_chart_svg | safe }}
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>미국 반도체 관련주 · 90거래일</h2></div>
+        {% if peers %}
+        <div class="peers-row">
+          {% for p in peers %}
+          <div class="peer">
+            <div class="n">{{ p.ticker }}</div>
+            <div class="s">&nbsp;</div>
+            {{ p.spark_svg | safe }}
+            {% if p.chg is not none %}
+            <div class="c {{ 'up' if p.chg >= 0 else 'down' }}">{{ "%+.2f"|format(p.chg) }}%</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}<div class="empty">데이터 없음</div>{% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>000660 vs 반도체 관련주 상관관계 · 베타</h2></div>
+        {% if correlations %}
+        <table>
+          <thead><tr><th>종목</th><th class="num">상관계수</th><th class="num">표본(n)</th><th class="num">베타</th><th class="num">최대상관 시차</th><th></th></tr></thead>
+          <tbody>
+            {% for c in correlations %}
+            <tr>
+              <td>{{ c.ticker }}</td>
+              <td class="num">{{ "%.3f"|format(c.coefficient) }}</td>
+              <td class="num">{{ c.samples }}</td>
+              <td class="num">{{ "%+.2f"|format(c.beta) }}</td>
+              <td class="num">{{ c.best_lag }}일 ({{ "%+.3f"|format(c.best_lag_coef) }})</td>
+              <td>{% if c.reliable %}<span class="tag">신뢰 가능</span>{% else %}<span class="tag warn">표본 부족</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<div class="empty">데이터 없음</div>{% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>최근 급변일 · 같은 날 함께 움직인 지표</h2>
+          <span class="sub">000660 일간 ±{{ "%.0f"|format(move_meta.threshold_pct) }}% 이상 · 인과 단정 아님</span>
+        </div>
+        {% if move_cards %}
+        {% for m in move_cards %}
+        <div class="price-rule">
+          <div class="ph">
+            <h3>{{ m.date }} · <span class="{{ 'up' if m.return_pct >= 0 else 'down' }}">{{ "%+.2f"|format(m.return_pct) }}%</span></h3>
+            <span class="stats">베타 추정: 직전 {{ m.beta_window }}거래일 · 기여분 반영 지표 {{ m.n_contributing }}/{{ m.contributions|length }}</span>
+          </div>
+          <table>
+            <thead><tr><th>지표</th><th class="num">그날 변화</th><th class="num">평소 베타</th><th class="num">표본(n)</th><th class="num">기대 기여분</th><th></th></tr></thead>
+            <tbody>
+              {% for c in m.contributions %}
+              <tr>
+                <td>{{ c.label }}{% if c.timing == 'prior_us_session' %} <span class="sub">(직전 미국장{% if c.change_date %} {{ c.change_date }}{% endif %})</span>{% endif %}</td>
+                {% if c.change is not none %}
+                <td class="num">{{ "%+.2f"|format(c.change) }}{{ "%p" if c.kind == 'diff' else "%" }}</td>
+                {% else %}<td class="num empty">데이터 없음</td>{% endif %}
+                {% if c.beta is not none %}
+                <td class="num">{{ "%+.2f"|format(c.beta) }}</td>
+                {% else %}<td class="num empty">-</td>{% endif %}
+                <td class="num">{{ c.beta_samples }}</td>
+                {% if c.contribution_pct is not none %}
+                <td class="num">{{ "%+.2f"|format(c.contribution_pct) }}%p</td>
+                {% else %}<td class="num empty">-</td>{% endif %}
+                <td>
+                  {% if c.status == 'no_series' %}<span class="tag warn">시세 데이터 없음</span>
+                  {% elif c.status == 'no_change' %}<span class="tag warn">그날 변화 데이터 없음</span>
+                  {% elif c.status == 'no_beta' %}<span class="tag warn">베타 계산 불가</span>
+                  {% elif c.status == 'low_samples' %}<span class="tag warn">표본 {{ c.beta_samples }}&lt;{{ move_meta.min_samples }} · 기여분 제외</span>
+                  {% endif %}
+                  {% if c.note %}<span class="tag">{{ c.note }}</span>{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+              <tr>
+                <td><strong>기여분 합</strong></td><td></td><td></td><td></td>
+                <td class="num"><strong>{{ "%+.2f"|format(m.explained_pct) }}%p</strong></td><td></td>
+              </tr>
+              <tr>
+                <td><strong>설명되지 않는 잔차</strong></td><td></td><td></td><td></td>
+                <td class="num"><strong>{{ "%+.2f"|format(m.residual_pct) }}%p</strong></td><td><span class="sub">실제 {{ "%+.2f"|format(m.return_pct) }}% = 합 + 잔차</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="stats" style="margin-top:8px">
+            투자자별 수급:
+            {% if m.flow %}
+              개인 {{ "{:,.0f}".format(m.flow.individual) if m.flow.individual is not none else "데이터 없음" }} ·
+              외국인 {{ "{:,.0f}".format(m.flow.foreigner) if m.flow.foreigner is not none else "데이터 없음" }} ·
+              기관 {{ "{:,.0f}".format(m.flow.institution) if m.flow.institution is not none else "데이터 없음" }}
+            {% else %}데이터 없음{% endif %}
+          </div>
+          <div class="stats" style="margin-top:6px">
+            그날의 뉴스·공시·claim:
+            {% if m.items %}
+              {% for it in m.items %}
+              <div class="event">
+                <span>
+                  {{ it.text }}
+                  {% if it.confidence == 'rumor' %}<span class="tag rumor">미확인</span>
+                  {% elif it.confidence == 'disclosure' %}<span class="tag">공시</span>
+                  {% else %}<span class="tag">출처 확인</span>{% endif %}
+                  <span class="sub">{{ it.kind }}{% if it.source %} · {{ it.source }}{% endif %}</span>
+                </span>
+              </div>
+              {% endfor %}
+            {% else %}기록 없음{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        <div style="margin-top:10px; font-size:11px; color:#86868b">
+          "기대 기여분" = 급변일 직전 {{ move_meta.beta_window }}거래일(급변일 제외)로 추정한 평소 베타 × 그날 지표 변화량입니다.
+          원인이 아니라 "같은 날 함께 움직인 정도"의 측정값입니다. 지표별 단변량 베타라 SOX·엔비디아처럼 겹치는 지표는
+          합산하면 과대 계산될 수 있고, 코스피는 000660 자체를 포함합니다. 베타 표본이 {{ move_meta.min_samples }}개 미만인 지표는 기여분에서 빼고 잔차에 남깁니다.
+          미국 지표는 한국 장 개장 전에 마감한 직전 미국 거래일 변화를 씁니다.
+        </div>
+        {% else %}
+        <div class="empty">데이터 없음 — 최근 250거래일에 ±{{ "%.0f"|format(move_meta.threshold_pct) }}% 이상 움직인 날이 없거나 시세가 부족합니다.</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>기술적 지표 규칙 백테스트 · 000660 (전체 기간)</h2>
+          {% if rule_backtest %}<span class="sub">{{ rule_backtest.start }} ~ {{ rule_backtest.end }} · 과거 측정, 매매 신호 아님</span>{% endif %}
+        </div>
+        {% if rule_backtest %}
+        <table>
+          <thead>
+            <tr>
+              <th>규칙</th><th class="num">총수익률</th><th class="num">최대낙폭(MDD)</th>
+              <th class="num">거래(n)</th><th class="num">승률</th><th class="num">노출도</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rule_backtest.rows %}
+            <tr>
+              <td>{{ row.name }}</td>
+              <td class="num {{ 'up' if row.total_return_pct is not none and row.total_return_pct >= 0 else 'down' }}">
+                {{ "%+.1f"|format(row.total_return_pct) if row.total_return_pct is not none else "-" }}%
+              </td>
+              <td class="num down">{{ "%+.1f"|format(row.mdd_pct) if row.mdd_pct is not none else "-" }}%</td>
+              <td class="num">{{ row.n }}</td>
+              <td class="num">{{ "%.1f"|format(row.win_rate_pct) if row.win_rate_pct is not none else "-" }}%</td>
+              <td class="num">{{ "%.1f"|format(row.exposure_pct) if row.exposure_pct is not none else "-" }}%</td>
+              <td>{% if not row.reliable %}<span class="tag warn">n&lt;{{ rule_backtest.min_samples }}</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div style="margin-top:10px; font-size:11px; color:#86868b">
+          거래비용(수수료·세금 — 참고용 근사치) 반영됨. in-sample/out-of-sample 분리 비교와
+          threshold 비교는 <code>python scripts/backtest_strategies.py</code> 참고.
+        </div>
+        {% else %}
+        <div class="empty">000660 시세가 1년 미만입니다. <code>python collectors/kr_market.py 5y</code> 실행 필요.</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>매수·목표·손절 기준가 · 000660</h2>
+          <span class="sub">백테스트 통과 규칙만 · 거래 100건↑ · 전체·최근1년 거래당평균 둘 다 양수</span>
+        </div>
+        {% if price_rule_signals is none %}
+          <div class="empty">000660 시세가 1년 미만입니다. <code>python collectors/kr_market.py 5y</code> 실행 필요.</div>
+        {% elif not price_rule_signals %}
+          <div class="empty">오늘 해당 규칙 없음 (백테스트 통과 기준을 만족한 규칙이 없습니다)</div>
+        {% else %}
+          {% for rule in price_rule_signals %}
+          <div class="price-rule">
+            <div class="ph">
+              <h3>{{ rule.label }}</h3>
+              {% if not rule.reliable %}<span class="tag warn">⚠ n&lt;30</span>{% endif %}
+            </div>
+            {% if rule.has_signal_today %}
+            <div class="price-levels">
+              <div class="pl entry"><div class="l">매수 기준가</div><div class="v">₩{{ "{:,.0f}".format(rule.entry_price) }}</div></div>
+              <div class="pl target"><div class="l">목표가</div><div class="v">₩{{ "{:,.0f}".format(rule.target_price) }}</div></div>
+              <div class="pl stop"><div class="l">손절가</div><div class="v">₩{{ "{:,.0f}".format(rule.stop_price) }}</div></div>
+            </div>
+            {% else %}
+            <div class="empty" style="margin-bottom:10px">오늘 신호 없음 (규칙은 통과했지만 오늘은 조건 미충족)</div>
+            {% endif %}
+            <div class="stats">
+              전체 {{ rule.n }}건 · 승률 {{ "%.1f"|format(rule.win_rate_pct) }}% ·
+              거래당평균 {{ "%+.2f"|format(rule.mean_return_pct) }}% ·
+              MDD <span class="down">{{ "%+.1f"|format(rule.mdd_pct) }}%</span> ·
+              최근1년 {{ rule.oos_n }}건(거래당평균 {{ "%+.2f"|format(rule.oos_mean_return_pct) }}%)
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
+        <div style="margin-top:10px; font-size:11px; color:#86868b">
+          기계적으로 계산된 가격입니다 — 향후 가격을 전망하는 게 아니라, 과거에 검증된
+          규칙을 오늘 적용하면 나오는 레벨입니다. 거래비용 반영됨. 상세 비교는
+          <code>python scripts/backtest_strategies.py --strategy price_rules</code> 참고.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>최근 뉴스</h2>
+          <span class="sub">출처·날짜 명시 · 해석 없이 제목만</span>
+        </div>
+        {% if news %}
+          {% for n in news %}
+          <div class="news-item">
+            <div class="news-head">
+              <span class="news-title">
+                {% if n.url %}<a href="{{ n.url }}" target="_blank" rel="noopener">{{ n.headline }}</a>{% else %}{{ n.headline }}{% endif %}
+                {% if n.confidence == 'rumor' %}<span class="tag rumor">미확인</span>{% endif %}
+              </span>
+              <span class="news-meta">{{ n.source or "출처 미상" }} · {{ n.published_at[:10] if n.published_at else "" }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">아직 수집된 뉴스가 없습니다. <code>python collectors/news.py</code> 실행 필요.</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>투자 프레임워크 렌즈</h2>
+          <span class="sub">실존 인물의 발언이 아닌, 프레임워크 이름만 빌린 충족/미충족/확인필요 체크</span>
+        </div>
+        {% for lens in lenses %}
+        <div class="lens">
+          <div class="lh">{{ lens.lens }}{% if not lens.data_available %} <span class="stub">— 아직 계산 불가</span>{% endif %}</div>
+          {% for f in lens.findings %}
+          <div class="finding">
+            <span class="st {{ 'met' if f.status == '충족' else ('unmet' if f.status == '미충족' else 'unknown') }}">{{ f.status }}</span>
+            <span><span class="crit">{{ f.criterion }}</span> — <span class="detail">{{ f.detail }}</span></span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>에이전트 리서치 요약</h2>
+          <span class="sub">
+            {% if agent_analysis %}{{ agent_analysis.model }} · {{ agent_analysis.run_date }} 생성 · 배치 캐시{% else %}미생성{% endif %}
+          </span>
+        </div>
+        {% if agent_analysis %}
+          <p style="font-size:13px; line-height:1.75; color:#1d1d1f; white-space:pre-line">{{ agent_analysis.narrative }}</p>
+          <div style="margin-top:12px; font-size:11px; color:#86868b">
+            근거로 호출한 툴 ({{ agent_analysis.tool_calls|length }}회):
+            {{ agent_analysis.tool_calls|map(attribute='name')|join(', ') if agent_analysis.tool_calls else '없음' }}
+          </div>
+        {% else %}
+          <div class="empty">
+            아직 생성된 분석이 없습니다.
+            <code>python scripts/run_agents.py --ticker 000660</code> 실행 필요
+            (Anthropic API 비용 발생 — 먼저 <code>--dry-run</code>으로 전송될 내용을 확인할 수 있습니다).
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>관점별 토론 (섀도 기록 — 매매 미반영)</h2>
+          <span class="sub">읽기 전용 · 위험 점수·상태에 반영하지 않음 · 수동 실행(scripts/run_debate.py)</span>
+        </div>
+        {% if debate and debate.conclusion %}
+          <div style="font-size:13px; margin-bottom:6px">
+            기준일 {{ debate.decision_date }} · 종합 결론 <span class="tag warn">{{ debate.conclusion }}</span>
+            · {{ debate.model }}{% if debate.model_served and debate.model_served != debate.model %} (응답 모델 {{ debate.model_served }}){% endif %}
+          </div>
+          {% if debate.summary %}<p style="font-size:13px; line-height:1.7; white-space:pre-line">{{ debate.summary }}</p>{% endif %}
+          <div style="font-size:11px; color:#86868b">
+            근거 데이터: {{ debate.evidence|join(', ') if debate.evidence else '없음' }} ·
+            누적 기록 {{ debate.n_records }}건(표본 60건 미만이면 채점 판단 불가) · 검토 대기 {{ debate.n_review }}건
+          </div>
+          <div style="font-size:11px; color:#86868b; margin-top:4px">
+            사이클·금리·유동성·가치·추세·반대 관점(실존 인물 아님)의 토론 기록입니다. 매수·매도 판단이나 위험 점수와 무관하며,
+            과거 날짜로는 실행하지 않습니다(모델의 과거 학습으로 오염되기 때문).
+          </div>
+        {% else %}
+          <div class="empty">
+            아직 기록 없음{% if debate and debate.n_review %} (검토 대기 {{ debate.n_review }}건){% endif %}.
+            <code>python scripts/run_debate.py</code>로 dry-run(비용 없음) 후 <code>--execute</code>로 직접 실행.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>전문가 발언 채점 현황</h2>
+          <span class="sub">사후 채점 · 목표가/기간 명시된 발언만 · 방향 예측 아님</span>
+        </div>
+        {% if claim_scoreboard and claim_scoreboard.n > 0 %}
+          <table>
+            <tbody>
+              <tr><td>채점된 표본</td><td class="num">{{ claim_scoreboard.n }}건</td></tr>
+              <tr><td>적중</td><td class="num">{{ claim_scoreboard.hits }}건</td></tr>
+              <tr><td>적중률</td><td class="num">{{ "%.1f"|format(claim_scoreboard.hit_rate_pct) }}%</td></tr>
+            </tbody>
+          </table>
+          {% if not claim_scoreboard.reliable %}
+          <div style="margin-top:10px">
+            <span class="tag warn">⚠ 표본 {{ claim_scoreboard.n }}건 — 통계적 결론 부족 (권장 {{ claim_scoreboard.min_samples }}건 이상)</span>
+          </div>
+          {% endif %}
+          <div style="margin-top:14px; font-size:11.5px; color:#86868b">
+            미채점 {{ claim_scoreboard.pending_count }}건 대기 중
+            {%- if claim_scoreboard.not_gradable_count %} · 목표가/기간 미기재 {{ claim_scoreboard.not_gradable_count }}건은 채점 대상 아님{% endif %}
+          </div>
+          <div style="margin-top:16px">
+            {% for cl in claim_scoreboard.recent %}
+            <div class="news-item">
+              <div class="news-head">
+                <span class="news-title">
+                  {{ cl.who }} · {{ cl.ticker }}
+                  {% if cl.confidence == 'rumor' %}<span class="tag rumor">미확인</span>{% endif %}
+                  <span class="tag {{ '' if cl.hit else 'warn' }}">{{ '적중' if cl.hit else '실패' }}</span>
+                </span>
+                <span class="news-meta">
+                  목표 {{ cl.target_price }} → 사후 {{ "%.2f"|format(cl.price_after) if cl.price_after is not none else "-" }} · {{ cl.graded_on }}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            아직 채점된 발언이 없습니다.
+            {% if claim_scoreboard and claim_scoreboard.pending_count %}
+              미채점 {{ claim_scoreboard.pending_count }}건 대기 중 — <code>python scripts/grade_claims.py</code> 실행 필요.
+            {% else %}
+              <code>python scripts/add_claim.py</code>로 목표가·기간을 명시한 발언을 먼저 기록하세요.
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>애널리스트/의견 추적</h2>
+          <span class="sub">사람별 최근 의견 1건 + 그 이후 실제 주가 변화 · 원문 인용 아님(요지만)</span>
+        </div>
+        {% if analyst_views %}
+          {% for v in analyst_views %}
+          <div class="news-item">
+            <div class="news-head">
+              <span class="news-title">
+                {{ v.who }}{% if v.affiliation %} ({{ v.affiliation }}){% endif %}
+                {% if v.stance %}<span class="tag {{ 'up' if v.stance == '매수' else ('down' if v.stance == '매도' else '') }}" style="border-color:currentColor">{{ v.stance }}</span>{% endif %}
+                {% if v.confidence == 'rumor' %}<span class="tag rumor">미확인</span>{% endif %}
+              </span>
+              <span class="news-meta">{{ v.said_on }}</span>
+            </div>
+            <div style="font-size:12.5px; color:#1d1d1f; margin-top:4px">
+              {% if v.source_url %}<a href="{{ v.source_url }}" target="_blank" rel="noopener">{{ v.summary }}</a>{% else %}{{ v.summary }}{% endif %}
+            </div>
+            <div class="news-meta" style="margin-top:6px">
+              목표가 {{ "{:,.0f}".format(v.target_price) if v.target_price is not none else "-" }} ·
+              발언 시점 {{ "{:,.0f}".format(v.price_then) if v.price_then is not none else "-" }} →
+              현재 {{ "{:,.0f}".format(v.latest_price) if v.latest_price is not none else "-" }}
+              {% if v.pct_change_since is not none %}
+                <span class="{{ 'up' if v.pct_change_since >= 0 else 'down' }}">({{ "%+.1f"|format(v.pct_change_since) }}%)</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">
+            아직 기록된 의견이 없습니다. <code>python scripts/add_claim.py --stance 매수|중립|매도 ...</code>로 기록하세요.
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <div class="side-col">
+
+      {% if sentiment %}
+      <div class="card gauge-card">
+        <div class="card-head"><h2>시장 심리 게이지</h2></div>
+        {{ gauge_svg | safe }}
+        <div class="cat {{ 'down' if sentiment.score < 40 else ('up' if sentiment.score > 60 else '') }}">{{ sentiment.category }}</div>
+        <div class="desc">VIX {{ "%.1f"|format(sentiment.vix_level) }} · 최근 {{ sentiment.samples }}거래일 분포 기준{% if not sentiment.reliable %} · <span class="tag warn">표본 부족</span>{% endif %}</div>
+        <div class="src">CNN Fear&amp;Greed와 다른 지수 — CBOE VIX 백분위 기반 자체 게이지</div>
+      </div>
+      {% endif %}
+
+      {% if adr %}
+      <div class="card hero-stat">
+        <div class="l">ADR 프리미엄 상세</div>
+        <div class="v">{{ "%+.1f"|format(adr.premium_pct) }}%</div>
+        <div class="note">
+          나스닥 SKHY(패리티 ${{ "%.2f"|format(adr.parity_usd) }}, 실제 ${{ "%.2f"|format(adr.actual_usd) }})가
+          서울 000660 대비 {{ "%.1f"|format(adr.premium_pct|abs) }}% {{ "높게" if adr.premium_pct >= 0 else "낮게" }} 거래되고 있습니다.
+          전환비율 1:{{ adr.ratio }} 기준 — 매수·매도 신호가 아닌 두 시장 간 가격 차이입니다.
+        </div>
+        <div class="src">전환비율 1:{{ adr.ratio }}는 공식 예탁계약서(F-1/depositary agreement)로 아직 재확인 못한 값입니다
+          (출처: SK hynix ADR 프리미엄 추적 사이트의 계산식 설명). 틀렸을 경우 <code>.env</code>의 <code>ADR_RATIO</code>로
+          교체할 수 있습니다 — 코드 수정 불필요.</div>
+      </div>
+      {% endif %}
+
+      {% if backtest %}
+      <div class="card">
+        <div class="card-head"><h2>{{ backtest.label }}</h2></div>
+        <table>
+          <tbody>
+            <tr><td>표본</td><td class="num">{{ backtest.n }}회</td></tr>
+            <tr><td>승률</td><td class="num">{{ "%.1f"|format(backtest.win_rate) }}%</td></tr>
+            <tr><td>평균수익</td><td class="num {{ 'up' if backtest.mean_return >= 0 else 'down' }}">{{ "%+.2f"|format(backtest.mean_return) }}%</td></tr>
+            <tr><td>최대손실</td><td class="num down">{{ "%+.2f"|format(backtest.worst) }}%</td></tr>
+          </tbody>
+        </table>
+        {% if not backtest.reliable %}
+        <div style="margin-top:10px"><span class="tag warn">⚠ 표본 {{ backtest.n }}개 — 통계적 결론 부족</span></div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <div class="card-head"><h2>오늘의 캘린더</h2></div>
+        {% if today_events %}
+          {% for e in today_events %}
+          <div class="event"><span class="d">[{{ e.kind }}]</span><span>{{ e.label }} — {{ e.note }}</span></div>
+          {% endfor %}
+        {% else %}<div class="empty">해당 이벤트 없음</div>{% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>다가오는 45일 일정</h2></div>
+        {% if upcoming_events %}
+          {% for e in upcoming_events %}
+          <div class="event"><span class="d">{{ e.date.strftime("%m-%d") }}</span><span>{{ e.label }}</span></div>
+          {% endfor %}
+        {% else %}<div class="empty">예정된 이벤트 없음</div>{% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>주시할 이벤트</h2></div>
+        <div class="stats" style="margin-bottom:6px"><strong>등록된 수급 이벤트</strong>
+          <span class="sub">자사주 매입·실적발표·콘퍼런스콜 · 일정 기록일 뿐 방향 전망 아님</span></div>
+        {% if watch_events %}
+          {% for e in watch_events %}
+          <div class="event">
+            <span class="d">{{ e.status }}</span>
+            <span>
+              {{ e.label }} · {{ e.period }}
+              {% if e.title %} — {{ e.title }}{% endif %}
+              {% if e.note %} <span class="sub">({{ e.note }})</span>{% endif %}
+              <span class="tag">{{ "수동 입력" if e.source == 'manual' else "DART 추출" }}</span>
+            </span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">등록된 이벤트 없음 <span class="sub">— <code>python scripts/add_event.py</code></span></div>
+        {% endif %}
+
+        <div class="stats" style="margin:14px 0 6px"><strong>자사주 매입 종료 전후 · 과거 측정</strong></div>
+        {% if event_study and event_study.n_events > 0 %}
+          <table>
+            <thead><tr><th>구간</th><th class="num">표본(n)</th><th class="num">평균</th><th class="num">중앙값</th><th class="num">최대손실</th><th class="num">외국인 순매수 평균(n)</th><th></th></tr></thead>
+            <tbody>
+              {% for w in event_study.windows %}
+              {% for label, rs, fs in [("종료 전 " ~ w.n_days ~ "거래일", w.before, w.flow_before), ("종료 후 " ~ w.n_days ~ "거래일", w.after, w.flow_after)] %}
+              <tr>
+                <td>{{ label }}</td>
+                <td class="num">{{ rs.n }}</td>
+                {% if rs.n > 0 %}
+                <td class="num">{{ "%+.2f"|format(rs.mean_pct) }}%</td>
+                <td class="num">{{ "%+.2f"|format(rs.median_pct) }}%</td>
+                <td class="num down">{{ "%+.2f"|format(rs.worst_pct) }}%</td>
+                {% else %}
+                <td class="num empty">데이터 없음</td><td class="num empty">-</td><td class="num empty">-</td>
+                {% endif %}
+                <td class="num">
+                  {% if fs.n > 0 %}{{ "{:,.0f}".format(fs.mean) }} ({{ fs.n }}){% else %}<span class="empty">데이터 없음</span>{% endif %}
+                </td>
+                <td>{% if rs.n > 0 and not rs.reliable %}<span class="tag warn">⚠ 표본 {{ rs.n }}&lt;{{ event_study.min_samples }}</span>{% endif %}</td>
+              </tr>
+              {% endfor %}
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="stats" style="margin-top:8px">
+            이벤트 {{ event_study.n_events }}건 중 시세 범위 밖이라 제외 {{ event_study.windows[0].n_excluded }}건.
+            기준일 = 종료일 이하 마지막 거래일. 창마다 N거래일이 다 찬 이벤트만 셉니다(그래서 전·후 표본수가 다를 수 있음).
+            {% if not event_study.has_flow %}외국인 수급 데이터 없음(investor_flow 비어 있음).{% endif %}
+            최대손실 = 가장 나빴던 이벤트의 수익률. 과거 측정이며 앞으로를 전망하지 않습니다.
+          </div>
+        {% else %}
+          <div class="empty">데이터 없음 <span class="sub">— 종료된 자사주 매입 이벤트가 등록되어 있지 않습니다.</span></div>
+        {% endif %}
+
+        <span class="sub" style="display:block; margin:14px 0 10px">날짜 미확정·반복형 — 가중치 없음, 표시만</span>
+        {% for e in thematic_watchlist %}
+        <div class="event">
+          <span class="d">{{ e.expert_id or '-' }}</span>
+          <span>{{ e.label }}{% if e.note %} — {{ e.note }}{% endif %}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>매수 전 체크</h2></div>
+        {% for item in checklist %}
+        <div class="event">
+          <span class="d">{{ item.expert_id }}</span>
+          <span>{{ item.text }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>최근 수집 로그</h2></div>
+        {% if recent_logs %}
+          {% for l in recent_logs %}
+          <div class="event"><span class="d">{{ l.job }}</span><span>{{ l.status }} · {{ l.rows }}행 · {{ l.ran_at[5:16] }}</span></div>
+          {% endfor %}
+        {% else %}<div class="empty">아직 로그 없음</div>{% endif %}
+      </div>
+
+    </div>
+  </div>
+
+{% endif %}
+
+  <footer>
+    이 화면은 대부분 관측값입니다. 향후 주가 방향을 전망하거나 매수·매도를 권유하지
+    않습니다 — "매수·목표·손절 기준가" 카드만 예외인데, 그 가격도 전망이 아니라
+    과거 데이터로 엄격하게 검증된 규칙을 기계적으로 계산한 레벨입니다(아래 별도
+    설명 참고). 표본 수가 {{ min_samples }} 미만인 항목은 통계적 해석에 주의가 필요합니다.
+    시장 심리 게이지는 VIX 지수를 구간화한 자체 지표이며 CNN Fear&amp;Greed Index를 그대로 가져온 것이 아닙니다.
+    뉴스는 출처·날짜가 있는 항목만 표시하며 해석이나 투자 의견을 덧붙이지 않습니다. "미확인" 표시가 있는 항목은
+    출처가 검증되지 않은 소문입니다. 투자 프레임워크 렌즈는 실존 인물의 발언을 인용하거나 재현하지 않으며,
+    공개적으로 알려진 프레임워크 이름만 참고해 현재 데이터로 확인 가능한 사실만 분류합니다.
+    에이전트 리서치 요약은 배치 작업 시점에 생성돼 캐싱된 것이며, 화면을 여는 시점의
+    실시간 분석이 아닙니다. 방향 예측이나 매매 조언을 생성하지 않도록 프롬프트로
+    제약했고, 위반 문구가 감지되면 저장 자체를 막도록 만들었지만 LLM 출력이므로
+    완벽하지 않을 수 있습니다 — 사람이 최종 판단할 것.
+    전문가 발언 채점 현황은 과거 발언이 목표가·기간 기준으로 맞았는지 사후에
+    집계한 결과이며, 향후 발언의 적중을 보장하지 않습니다. "미확인" 표시가 있는
+    항목은 여기서도 마찬가지로 출처가 검증되지 않은 소문입니다.
+    애널리스트/의견 추적 카드는 사람별 가장 최근 발언 1건과 그 이후 실제
+    주가 변화를 나란히 보여주는 기록이며, 그 의견을 따르라는 추천이
+    아닙니다. 요약은 원문 인용이 아니라 본인이 정리한 요지이고, 매수/중립/
+    매도 라벨은 그 발언을 분류한 것일 뿐 실존 인물의 1인칭 발언을 재구성한
+    게 아닙니다.
+    기술적 지표 규칙 백테스트는 과거 데이터에 규칙을 그대로 적용했을 때의 성과를
+    측정한 것이며, 매수·매도 추천이 아니고 향후 수익을 보장하지 않습니다.
+    거래비용(수수료·세금)은 참고용 근사치입니다.
+    매수·목표·손절 기준가는 거래 100건 이상, 전체 기간과 최근 1년(검증 구간)
+    양쪽에서 거래당 평균수익(거래비용 반영)이 모두 양수인 규칙만 보여줍니다 —
+    이 기준을 통과하지 못한 규칙은 어떤 가격도 표시하지 않고, 통과한 규칙이
+    하나도 없으면 "오늘 해당 규칙 없음"이라고만 표시합니다. 표시되는 가격은
+    "이 기계적 규칙을 오늘 그대로 적용하면 나오는 레벨"일 뿐 향후 가격이 그렇게
+    될 거라는 전망이 아니며, 과거에 통과했다고 미래에도 똑같이 통과하리라는
+    보장도 없습니다. 주문 API는 연결돼 있지 않습니다 — 이 가격으로 실제 매매가
+    자동 실행되지 않습니다.
+    전문가 경험칙 신호(위험 점수·전문가별 가중치)는 전문가가 영상에서 말한
+    경험칙을 기계적으로 계산한 on/off 값이며, 그 경험칙을 과거 데이터로
+    측정한 적중률·표본 수만큼 가중치를 준 것입니다 — 전문가의 실시간 판단이나
+    추천이 아니고, 위험 점수가 높다고 해서 실제로 가격이 내려간다는 보장도
+    없습니다. "오늘의 상태"(매수 가능/보류/분할 매도 단계)도 매매 신호가
+    아니라 참고 상태 문구이며, 이 앱은 보유 여부를 추적하지 않아 보유 중인
+    경우를 가정한 안내는 별도로 표시됩니다. 매수 전 체크 항목과 주시할
+    이벤트는 전문가가 전달한 경험칙·일정을 요약한 것이며 지금 매수·매도하라는
+    권유가 아닙니다.
+    개인 학습용 프로젝트이며 투자 판단의 근거로 사용하지 마세요.
+  </footer>
+
+</div>
+</body>
+</html>

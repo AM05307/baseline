@@ -1,0 +1,26 @@
+# 관점별 토론 섀도 기록 설정 — agents/debate.py, scripts/run_debate.py, scripts/debate_scorecard.py
+#
+# 토론 결과는 기록만 한다. 매매 결정·위험 점수·상태 문구에 반영하지 않는다(executor는 이 기록을 읽지도 않음).
+# 자동 스케줄에 넣지 않는다 — scripts/run_debate.py를 사람이 직접 --execute로 실행할 때만 API 비용이 나간다.
+
+model: claude-opus-5-5            # 현재 기본 Opus. 바꾸면 debate_shadow에 모델별로 따로 쌓인다(멱등 키에 모델 포함)
+effort: medium                    # output_config.effort — Opus 5.5 기본값과 같음(명시)
+max_tokens_per_call: 2500         # 호출 1회 출력 상한(사고 토큰 포함). 넘으면 잘린 답 → 가드레일이 검토로 보냄
+refusal_fallback: true            # 안전 분류기 거절 시 서버 측 대체 모델로 이어서 답하게 함(server-side-fallback 베타)
+
+# 비용 상한 — 실행 전에 "최악의 경우"(입력 추정 + 호출 수 × max_tokens_per_call)로 계산해서 넘으면 실행하지 않는다.
+max_tokens_per_run: 120000
+monthly_budget_usd: 5.0           # 이번 달(1일~) 기록된 토론 비용 + 이번 실행 최악 비용이 이 값을 넘으면 실행 안 함
+price_per_mtok:                   # 2026-10-06 기준 캐시된 가격표(claude-opus-5-5). 모델을 바꾸면 같이 바꿀 것
+  input: 4.0
+  output: 20.0
+
+# 입력 데이터가 이보다 오래됐으면(마지막 종가일 기준, 달력일) 실행하지 않는다 — 앞으로만 기록한다.
+max_snapshot_age_days: 5
+
+# 채점(scripts/debate_scorecard.py)
+scorecard:
+  min_samples: 60                 # 결론별 표본이 이보다 적으면 "판단 불가"
+  horizons: [5, 20, 63]
+  # 같은 날 위험 점수 상태와의 일치율 계산용 대응(관례 — 1:1 대응이 아니라는 점에 주의)
+  risk_state_map: {"정상": "위험 낮음", "1단계": "중립", "2단계 이상": "위험 높음"}

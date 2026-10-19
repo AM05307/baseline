@@ -1,0 +1,49 @@
+{
+  "_fixture_note": "실제 DART 응답이 아니다 — 이 세션은 DART 키 없이 진행해서, 공식 문서 기준 best-effort로 손으로 만든 가짜 응답이다(collectors/dart_client.py 상단 TODO 참고). account_nm 등의 '계정명' 자체는 한국 재무제표의 표준 용어라 확신 있게 썼지만, JSON 필드 키 이름(account_nm, thstrm_amount 등)은 공식 문서 재확인 전 추정이다.",
+  "status": "000",
+  "message": "정상",
+  "list": [
+    {
+      "rcept_no": "20260515000123",
+      "corp_code": "00164779",
+      "stock_code": "000660",
+      "bsns_year": "2026",
+      "reprt_code": "11013",
+      "fs_div": "CFS",
+      "fs_nm": "연결재무제표",
+      "sj_div": "BS",
+      "sj_nm": "재무상태표",
+      "account_nm": "자본총계",
+      "thstrm_amount": "65000000000000",
+      "rcept_dt": "2026-05-15"
+    },
+    {
+      "rcept_no": "20260515000123",
+      "corp_code": "00164779",
+      "stock_code": "000660",
+      "bsns_year": "2026",
+      "reprt_code": "11013",
+      "fs_div": "CFS",
+      "fs_nm": "연결재무제표",
+      "sj_div": "IS",
+      "sj_nm": "손익계산서",
+      "account_nm": "매출액",
+      "thstrm_amount": "12000000000000",
+      "rcept_dt": "2026-05-15"
+    },
+    {
+      "rcept_no": "20260515000123",
+      "corp_code": "00164779",
+      "stock_code": "000660",
+      "bsns_year": "2026",
+      "reprt_code": "11013",
+      "fs_div": "CFS",
+      "fs_nm": "연결재무제표",
+      "sj_div": "IS",
+      "sj_nm": "손익계산서",
+      "account_nm": "영업이익",
+      "thstrm_amount": "3000000000000",
+      "rcept_dt": "2026-05-15"
+    }
+  ]
+}

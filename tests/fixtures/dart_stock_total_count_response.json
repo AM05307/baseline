@@ -1,0 +1,19 @@
+{
+  "_fixture_note": "실제 DART 응답이 아니다 — 주식총수 현황(stockTotqySttus.json)의 가짜 응답. 이 엔드포인트는 collectors/dart_client.py에서 신뢰도가 가장 낮다고 표시한 부분이다 — 필드명(istc_totqy 등)은 전부 추정.",
+  "status": "000",
+  "message": "정상",
+  "list": [
+    {
+      "rcept_no": "20260515000123",
+      "corp_code": "00164779",
+      "se": "보통주",
+      "istc_totqy": "728002365"
+    },
+    {
+      "rcept_no": "20260515000123",
+      "corp_code": "00164779",
+      "se": "합계",
+      "istc_totqy": "728002365"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+# 국장/미장 비교 백테스트(scripts/market_compare.py) 계산용 가정값 — 실제 운용 금액·계좌와 무관하다.
+start: "2007-01-29"          # 네 대상 공통 시작(069500 yfinance 시세 시작일). USD/KRW는 2003-12부터 있다
+targets: ["000660", "069500", "SPY", "QQQ"]
+usd_targets: ["SPY", "QQQ"]   # 실제 USD/KRW 일별 환율(daily_price 'USDKRW')로 원화 환산
+initial_capital_krw: 10000000      # A·C·D 첫날 금액(가정)
+monthly_contribution_krw: 500000   # B 매달 적립액(가정)
+
+costs:
+  kr_commission: 0.00015     # 국내 편도 수수료(analysis/trading_costs 기본값과 같은 참고용 근사치)
+  us_commission: 0.0025      # 해외 편도 수수료 — 증권사·이벤트별로 다름, 확인 필요
+  fx_spread: 0.0             # 환전 비용(매수·매도 각각) — 0 = 환율 우대 100% 가정, 확인 필요
+  kr_stock_sell_tax: schedule  # 000660 매도 거래세: analysis/trading_costs.tax_rate_on 스케줄
+  kr_etf_sell_tax: 0.0       # 국내 주식형 ETF(069500) 매도 거래세 없음으로 가정 — 확인 필요
+
+# 해외 상장 ETF 양도소득세 — 최신 세법 확인 필요(2026-10 기준 일반적으로 알려진 값을 기본값으로 둠)
+overseas_capital_gains_tax:
+  rate: 0.22                  # 양도세 20% + 지방세 2%
+  annual_deduction_krw: 2500000
+
+drawdown_buy:                 # D 전략
+  initial_fraction: 0.25
+  levels: [-0.10, -0.20, -0.30]
+
+stage_weights: [1.0, 0.66, 0.33, 0.0]   # C 전략 단계 비중(정상·1·2·3단계)
+
+# C 전략에서 대상에 맞지 않아 빼는 신호(docs/signal_applicability_069500.md). 대체 계산은 하지 않는다.
+exclude_signals:
+  "000660": []
+  "069500": [KHJ_OVERHEAT, YJH_BOX_RANGE_TRIM, YJH_MEMORY_MARGIN, KSJ_FOREIGN_SELL]
+  SPY: [KHJ_OVERHEAT, YJH_BOX_RANGE_TRIM, YJH_MEMORY_MARGIN, KSJ_FOREIGN_SELL, KSJ_BREADTH]
+  QQQ: [KHJ_OVERHEAT, YJH_BOX_RANGE_TRIM, YJH_MEMORY_MARGIN, KSJ_FOREIGN_SELL, KSJ_BREADTH]

@@ -1,0 +1,29 @@
+{
+  "_fixture_note": "이 파일은 실제 KIS API 호출로 받은 응답이 아니다 — 이 프로젝트는 KIS 키 없이 진행된 세션에서 collectors/kis_client.py의 응답 파싱 로직만 검증하기 위해 손으로 만든 가짜 데이터다. rt_cd/msg_cd/msg1은 KIS 응답 공통 포맷(대부분의 KIS 엔드포인트에 공통)이고, output 안의 필드명(frgn_ntby_qty 등)은 collectors/kis_client.py 상단 TODO에 적힌 대로 공식 문서로 아직 재확인하지 못한 '최선의 추정'이다 — 실제 키 발급 후 raw 응답으로 다시 확인할 것.",
+  "rt_cd": "0",
+  "msg_cd": "MCA00000",
+  "msg1": "정상처리 되었습니다.",
+  "output": [
+    {
+      "stck_bsop_date": "20261002",
+      "stck_clpr": "182000",
+      "prsn_ntby_qty": "-1200",
+      "frgn_ntby_qty": "-5300",
+      "orgn_ntby_qty": "6500"
+    },
+    {
+      "stck_bsop_date": "20261005",
+      "stck_clpr": "180500",
+      "prsn_ntby_qty": "800",
+      "frgn_ntby_qty": "-4100",
+      "orgn_ntby_qty": "3300"
+    },
+    {
+      "stck_bsop_date": "20261006",
+      "stck_clpr": "184100",
+      "prsn_ntby_qty": "-900",
+      "frgn_ntby_qty": "2200",
+      "orgn_ntby_qty": "-1300"
+    }
+  ]
+}

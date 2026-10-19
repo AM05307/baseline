@@ -1,0 +1,28 @@
+# 비밀값 — 절대 커밋 금지 (CLAUDE.md "보안 원칙" 참고)
+.env
+.env.*
+!.env.example
+.kis_token.json
+.dart_corp_code_cache.json
+
+*.db
+*.sqlite3
+# 사용자가 직접 넣는 KRX 원본 데이터 — scripts/verify_outlier.py 참고, 커밋 안 함
+# (gitignore는 줄 끝 주석을 지원하지 않아 예전 한 줄 표기는 규칙이 작동하지 않았다)
+data/manual/*.csv
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
+.idea/
+.vscode/
+
+# executor 킬 스위치 파일(런타임 플래그 — 커밋하지 않음)
+KILL_SWITCH
+
+# 개인 메모(경력·구직 등) — 공개 저장소에 올리지 않음
+docs/private/
+
+# 실제 운용 금액 등 개인 설정 — 저장소에는 *.example.yaml만
+config/*.local.yaml

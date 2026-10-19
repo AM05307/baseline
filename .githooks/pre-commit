@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# .env 유출 방지 pre-commit 훅.
+# 활성화(최초 1회): git config core.hooksPath .githooks
+#
+# 두 가지를 막는다:
+#   1. .env 계열 파일 자체가 스테이징되는 것 (.env.example은 예외)
+#   2. 스테이징된 변경 내용에 비밀값 형태의 문자열이 새로 추가되는 것
+#      (변수명=빈값은 통과, 변수명=실제값처럼 보이는 긴 문자열만 차단)
+#      변수명을 하나씩 나열하지 않고 *_KEY/*_SECRET/*_TOKEN/*_ACCOUNT로
+#      끝나는 이름을 전부 잡는다 — DART_API_KEY·ANTHROPIC_API_KEY처럼
+#      나중에 .env에 새 변수가 추가돼도 이 훅을 다시 고치지 않아도 된다.
+set -euo pipefail
+
+blocked=0
+
+# --- 1) .env 계열 파일이 스테이징됐는지 ---
+staged_files=$(git diff --cached --name-only --diff-filter=ACM || true)
+env_files=$(echo "$staged_files" | grep -E '(^|/)\.env(\..*)?$' | grep -vE '\.env\.example$' || true)
+if [ -n "$env_files" ]; then
+  echo "[pre-commit] 커밋 차단: .env 파일이 스테이징돼 있습니다:" >&2
+  echo "$env_files" | sed 's/^/  /' >&2
+  echo "  git restore --staged <파일> 로 스테이징을 취소하세요." >&2
+  blocked=1
+fi
+
+# --- 2) 스테이징된 '추가된 줄'에 KEY/SECRET/TOKEN/ACCOUNT 형태 변수의
+#        실제 값처럼 보이는 문자열이 있는지 ---
+# 변수명=값 형태에서 값이 10자 이상인 경우만 걸림(변수명만 있고 값이 빈 줄은 통과).
+# 변수명은 그 접미사로만 판단한다(KIS_APP_KEY·KIS_APP_SECRET·KIS_ACCOUNT·
+# DART_API_KEY·ANTHROPIC_API_KEY 전부 걸림 — 새 *_KEY/*_SECRET/*_TOKEN/
+# *_ACCOUNT 변수가 .env에 추가돼도 이 정규식을 다시 고칠 필요 없음).
+suspicious=$(
+  git diff --cached -U0 -- . 2>/dev/null \
+    | grep -E '^\+[^+]' \
+    | grep -E '[A-Z0-9_]*(_KEY|_SECRET|_TOKEN|_ACCOUNT)[[:space:]]*=[[:space:]]*[A-Za-z0-9+/=_-]{10,}' \
+    || true
+)
+if [ -n "$suspicious" ]; then
+  echo "[pre-commit] 커밋 차단: 스테이징된 변경에 API 키/시크릿/토큰/계좌번호로 보이는" >&2
+  echo "값이 포함돼 있습니다. 실제 비밀값을 커밋하려는 게 아니라면 해당 변경을 제거하세요:" >&2
+  echo "$suspicious" | sed 's/^/  /' >&2
+  blocked=1
+fi
+
+if [ "$blocked" -ne 0 ]; then
+  exit 1
+fi
+
+exit 0
